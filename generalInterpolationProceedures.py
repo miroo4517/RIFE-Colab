@@ -99,16 +99,17 @@ def extractFrames(inputFile, projectFolder, mode, interpolatorConfig: Interpolat
         run_and_print_output(
             [FFMPEG4, '-i', inputFile, '-map_metadata', '-1', '-pix_fmt', 'rgb24', 'original_frames/%15d.png'])
     elif mode == 3 or mode == 4:
-        mpdecimateOptions = []
+        vf_filters = []
         if interpolatorConfig.getMpdecimatedEnabled():
             hi, lo, frac = mpdecimateSensitivity.split(",")
-            mpdecimate = "mpdecimate=hi={}:lo={}:frac={}".format(hi, lo, frac)
-            mpdecimateOptions += ['-vf']
-            mpdecimateOptions += [mpdecimate]
-        run_and_print_output(
-            [FFMPEG4, '-i', inputFile, '-map_metadata', '-1', '-pix_fmt', 'rgb24', '-copyts', '-r',
-             str(GlobalValues.timebase), '-vsync',
-             '0', '-frame_pts', 'true'] + mpdecimateOptions + ['-qscale:v', '1', 'original_frames/%15d.png'])
+            vf_filters.append("mpdecimate=hi={}:lo={}:frac={}".format(hi, lo, frac))
+        vf_filters.append("fps=" + str(GlobalValues.timebase))
+    
+        command = [FFMPEG4, '-i', inputFile, '-map_metadata', '-1', '-pix_fmt', 'rgb24']
+        if vf_filters:
+            command += ['-vf', ",".join(vf_filters)]
+        command += ['-qscale:v', '1', 'original_frames/%15d.png']
+        run_and_print_output(command)
 
 
 def runInterpolator(projectFolder, interpolatorConfig: InterpolatorConfig, outputFPS):
